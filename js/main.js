@@ -80,6 +80,113 @@ document.addEventListener("DOMContentLoaded", () => {
     videoObserver.observe(video);
   });
 
+  // Gallery Preview
+  const previewModal = document.createElement("div");
+  previewModal.className = "preview-modal";
+  previewModal.setAttribute("role", "dialog");
+  previewModal.setAttribute("aria-modal", "true");
+  previewModal.setAttribute("aria-hidden", "true");
+  previewModal.innerHTML = `
+    <div class="preview-dialog" role="document">
+      <div class="preview-header">
+        <div>
+          <span class="preview-title"></span>
+          <small class="preview-meta"></small>
+        </div>
+        <button class="preview-close" type="button" aria-label="Close preview">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="preview-media"></div>
+    </div>
+  `;
+  document.body.appendChild(previewModal);
+
+  const previewTitle = previewModal.querySelector(".preview-title");
+  const previewMeta = previewModal.querySelector(".preview-meta");
+  const previewMedia = previewModal.querySelector(".preview-media");
+  const previewClose = previewModal.querySelector(".preview-close");
+
+  document.querySelectorAll(".media-container").forEach((container) => {
+    const image = container.querySelector("img");
+    const video = container.querySelector("video");
+    const source = image || video;
+    if (!source) return;
+
+    const title =
+      container.querySelector(".media-caption span")?.textContent.trim() ||
+      container.querySelector(".video-overlay span")?.textContent.trim() ||
+      source.alt ||
+      "Portfolio preview";
+    const meta =
+      container.querySelector(".media-caption small")?.textContent.trim() ||
+      (video ? "Motion Design" : "Static Design");
+
+    const viewButton = document.createElement("button");
+    viewButton.className = "media-view-button";
+    viewButton.type = "button";
+    viewButton.innerHTML = '<i class="fas fa-expand"></i><span>View</span>';
+    viewButton.setAttribute("aria-label", `View ${title}`);
+    container.appendChild(viewButton);
+
+    viewButton.addEventListener("click", () => {
+      openPreview({
+        type: video ? "video" : "image",
+        src: source.getAttribute("src"),
+        title,
+        meta,
+        alt: image?.alt || title,
+      });
+    });
+  });
+
+  function openPreview({ type, src, title, meta, alt }) {
+    if (!previewMedia || !src) return;
+
+    previewMedia.innerHTML = "";
+    const media = document.createElement(type === "video" ? "video" : "img");
+    media.src = src;
+
+    if (type === "video") {
+      media.controls = true;
+      media.autoplay = true;
+      media.playsInline = true;
+    } else {
+      media.alt = alt;
+    }
+
+    previewMedia.appendChild(media);
+
+    if (previewTitle) previewTitle.textContent = title;
+    if (previewMeta) previewMeta.textContent = meta;
+
+    previewModal.classList.add("open");
+    previewModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    previewClose?.focus();
+  }
+
+  function closePreview() {
+    previewModal.classList.remove("open");
+    previewModal.setAttribute("aria-hidden", "true");
+    previewMedia.innerHTML = "";
+    document.body.style.overflow = "";
+  }
+
+  previewClose?.addEventListener("click", closePreview);
+
+  previewModal.addEventListener("click", (event) => {
+    if (event.target === previewModal) {
+      closePreview();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && previewModal.classList.contains("open")) {
+      closePreview();
+    }
+  });
+
   // Form Handling
   const contactForm = document.querySelector("#contact-form");
   const responseText = document.querySelector("#form-response");
