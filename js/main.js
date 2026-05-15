@@ -108,19 +108,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewClose = previewModal.querySelector(".preview-close");
 
   document.querySelectorAll(".media-container").forEach((container) => {
+    const videoSrc = container.dataset.videoSrc;
     const image = container.querySelector("img");
     const video = container.querySelector("video");
     const source = image || video;
-    if (!source) return;
+    if (!source && !videoSrc) return;
 
     const title =
       container.querySelector(".media-caption span")?.textContent.trim() ||
       container.querySelector(".video-overlay span")?.textContent.trim() ||
-      source.alt ||
+      source?.alt ||
       "Portfolio preview";
     const meta =
       container.querySelector(".media-caption small")?.textContent.trim() ||
-      (video ? "Motion Design" : "Static Design");
+      (video || videoSrc ? "Motion Design" : "Static Design");
+    const previewData = {
+      type: video || videoSrc ? "video" : "image",
+      src: videoSrc || source.getAttribute("src"),
+      title,
+      meta,
+      alt: image?.alt || title,
+    };
 
     const viewButton = document.createElement("button");
     viewButton.className = "media-view-button";
@@ -129,14 +137,21 @@ document.addEventListener("DOMContentLoaded", () => {
     viewButton.setAttribute("aria-label", `View ${title}`);
     container.appendChild(viewButton);
 
-    viewButton.addEventListener("click", () => {
-      openPreview({
-        type: video ? "video" : "image",
-        src: source.getAttribute("src"),
-        title,
-        meta,
-        alt: image?.alt || title,
-      });
+    container.setAttribute("tabindex", "0");
+    container.setAttribute("role", "button");
+    container.setAttribute("aria-label", `View ${title}`);
+
+    container.addEventListener("click", () => openPreview(previewData));
+    container.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openPreview(previewData);
+      }
+    });
+
+    viewButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openPreview(previewData);
     });
   });
 
